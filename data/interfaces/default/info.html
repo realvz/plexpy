@@ -60,15 +60,13 @@ DOCUMENTATION :: END
 % if data:
 <div class="container-fluid">
     <div class="row">
-        % if data['media_type'] != 'library':
         <div class="art-face" style="background-image:url(pms_image_proxy?img=${data['art']}&width=1920&height=1080)"></div>
-        % endif
         <div class="summary-container">
             <div class="summary-navbar">
                 <div class="col-md-12">
                     <div class="summary-navbar-list">
                         <ul class="list-unstyled breadcrumb">
-                        % if data['type'] == 'library':
+                        % if data['media_type'] == 'library':
                         <li class="active">${data['title']}</li>
                         % elif data['media_type'] == 'movie':
                         <li><a href="info?library_id=${data['library_id']}">${data['library_title']}</a></li>
