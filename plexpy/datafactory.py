@@ -956,6 +956,14 @@ class DataFactory(object):
         if mapping:
             logger.info(u"PlexPy DataFactory :: Updating rating keys in the database.")
             for old_key, new_key in mapping.iteritems():
+                # check library_id (1 table)
+                monitor_db.action('UPDATE session_history_metadata SET library_id = ? WHERE rating_key = ?', 
+                                  [new_key_list['library_id'], old_key])
+
+                # check library_title (1 table)
+                monitor_db.action('UPDATE session_history_metadata SET library_title = ? WHERE rating_key = ?', 
+                                  [new_key_list['library_title'], old_key])
+
                 # check rating_key (3 tables)
                 monitor_db.action('UPDATE session_history SET rating_key = ? WHERE rating_key = ?', 
                                   [new_key, old_key])
@@ -1045,4 +1053,3 @@ class DataFactory(object):
                 continue
 
         return True
->>>>>>> Add library_id and library_title to database
