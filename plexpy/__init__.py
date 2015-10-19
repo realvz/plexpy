@@ -613,6 +613,7 @@ def dbcheck():
         )
         logger.debug(u"Updating library_id's in database. Please wait...")
         from plexpy import datafactory
+        data_factory = datafactory.DataFactory()
         result = data_factory.update_library_ids()
 
         if result:
