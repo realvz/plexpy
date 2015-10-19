@@ -1015,3 +1015,32 @@ class DataFactory(object):
             ip_address = item[0]
 
         return ip_address
+
+    def update_library_ids(self):
+        from plexpy import pmsconnect
+
+        pms_connect = pmsconnect.PmsConnect()
+        monitor_db = database.MonitorDatabase()
+
+        try:
+            query = 'SELECT id, rating_key FROM session_history_metadata WHERE library_id IS NULL'
+            result = monitor_db.select(query=query)
+        except:
+            logger.warn("Unable to execute database query for update_library_id.")
+            return None
+
+        for item in result:
+            id = item[0]
+            rating_key = item[1]
+
+            result = pms_connect.get_metadata_details(rating_key=rating_key)
+
+            if result:
+                metadata = result['metadata']
+                monitor_db.action('UPDATE session_history_metadata SET library_id = ? WHERE id = ?', [metadata['library_id'], id])
+                monitor_db.action('UPDATE session_history_metadata SET library_title = ? WHERE id = ?', [metadata['library_title'], id])
+            else:
+                continue
+
+        return True
+>>>>>>> Add library_id and library_title to database
