@@ -944,7 +944,9 @@ class DataFactory(object):
         
         return key_list
 
-    def update_rating_key(self, old_key_list='', new_key_list='', media_type=''):
+    def update_metadata(self, old_key_list='', new_key_list='', media_type=''):
+        from plexpy import pmsconnect
+        pms_connect = pmsconnect.PmsConnect()
         monitor_db = database.MonitorDatabase()
 
         # function to map rating keys pairs
@@ -965,73 +967,78 @@ class DataFactory(object):
             mapping = get_pairs(old_key_list, new_key_list)
         
         if mapping:
-            logger.info(u"PlexPy DataFactory :: Updating rating keys in the database.")
+            logger.info(u"PlexPy DataFactory :: Updating metadata in the database.")
             for old_key, new_key in mapping.iteritems():
-                # check library_id (1 table)
-                monitor_db.action('UPDATE session_history_metadata SET library_id = ? WHERE rating_key = ?', 
-                                  [new_key_list['library_id'], old_key])
+                metadata = pms_connect.get_metadata_details(new_key)
 
-                # check rating_key (3 tables)
-                monitor_db.action('UPDATE session_history SET rating_key = ? WHERE rating_key = ?', 
-                                  [new_key, old_key])
-                monitor_db.action('UPDATE session_history_media_info SET rating_key = ? WHERE rating_key = ?', 
-                                  [new_key, old_key])
-                monitor_db.action('UPDATE session_history_metadata SET rating_key = ? WHERE rating_key = ?', 
-                                  [new_key, old_key])
+                if metadata:
+                    metadata = metadata['metadata']
+                    if metadata['media_type'] == 'show' or metadata['media_type'] == 'artist':
+                        # check grandparent_rating_key (2 tables)
+                        monitor_db.action('UPDATE session_history SET grandparent_rating_key = ? WHERE grandparent_rating_key = ?', 
+                                          [new_key, old_key])
+                        monitor_db.action('UPDATE session_history_metadata SET grandparent_rating_key = ? WHERE grandparent_rating_key = ?', 
+                                          [new_key, old_key])
+                    elif metadata['media_type'] == 'season' or metadata['media_type'] == 'album':
+                        # check parent_rating_key (2 tables)
+                        monitor_db.action('UPDATE session_history SET parent_rating_key = ? WHERE parent_rating_key = ?', 
+                                          [new_key, old_key])
+                        monitor_db.action('UPDATE session_history_metadata SET parent_rating_key = ? WHERE parent_rating_key = ?', 
+                                          [new_key, old_key])
+                    else:
+                        # check rating_key (2 tables)
+                        monitor_db.action('UPDATE session_history SET rating_key = ? WHERE rating_key = ?', 
+                                          [new_key, old_key])
+                        monitor_db.action('UPDATE session_history_media_info SET rating_key = ? WHERE rating_key = ?', 
+                                          [new_key, old_key])
 
-                # check parent_rating_key (2 tables)
-                monitor_db.action('UPDATE session_history SET parent_rating_key = ? WHERE parent_rating_key = ?', 
-                                  [new_key, old_key])
-                monitor_db.action('UPDATE session_history_metadata SET parent_rating_key = ? WHERE parent_rating_key = ?', 
-                                  [new_key, old_key])
+                        # update session_history_metadata table
+                        self.update_metadata_details(old_key, new_key, metadata)
 
-                # check grandparent_rating_key (2 tables)
-                monitor_db.action('UPDATE session_history SET grandparent_rating_key = ? WHERE grandparent_rating_key = ?', 
-                                  [new_key, old_key])
-                monitor_db.action('UPDATE session_history_metadata SET grandparent_rating_key = ? WHERE grandparent_rating_key = ?', 
-                                  [new_key, old_key])
-
-                # check thumb (1 table)
-                monitor_db.action('UPDATE session_history_metadata SET thumb = replace(thumb, ?, ?) \
-                                  WHERE thumb LIKE "/library/metadata/%s/thumb/%%"' % old_key, 
-                                  [old_key, new_key])
-
-                # check parent_thumb (1 table)
-                monitor_db.action('UPDATE session_history_metadata SET parent_thumb = replace(parent_thumb, ?, ?) \
-                                  WHERE parent_thumb LIKE "/library/metadata/%s/thumb/%%"' % old_key, 
-                                  [old_key, new_key])
-
-                # check grandparent_thumb (1 table)
-                monitor_db.action('UPDATE session_history_metadata SET grandparent_thumb = replace(grandparent_thumb, ?, ?) \
-                                  WHERE grandparent_thumb LIKE "/library/metadata/%s/thumb/%%"' % old_key, 
-                                  [old_key, new_key])
-
-                # check art (1 table)
-                monitor_db.action('UPDATE session_history_metadata SET art = replace(art, ?, ?) \
-                                  WHERE art LIKE "/library/metadata/%s/art/%%"' % old_key, 
-                                  [old_key, new_key])
-
-            return 'Updated rating key in database.'
+            return 'Updated metadata in database.'
         else:
-            return 'No updated rating key needed in database. No changes were made.'
+            return 'Unable to update metadata in database. No changes were made.'
         # for debugging
         #return mapping
 
-    def get_session_ip(self, session_key=''):
-        monitor_db = database.MonitorDatabase()
+    def update_metadata_details(self, old_rating_key='', new_rating_key='', metadata=None):
 
-        if session_key:
-            query = 'SELECT ip_address FROM sessions WHERE session_key = %d' % int(session_key)
-            result = monitor_db.select(query)
-        else:
-            return None
+        if metadata:
+            # Create full_title
+            if metadata['media_type'] == 'episode' or metadata['media_type'] == 'track':
+                full_title = '%s - %s' % (metadata['grandparent_title'], metadata['title'])
+            else:
+                full_title = metadata['title']
 
-        ip_address = 'N/A'
+            directors = ";".join(metadata['directors'])
+            writers = ";".join(metadata['writers'])
+            actors = ";".join(metadata['actors'])
+            genres = ";".join(metadata['genres'])
 
-        for item in result:
-            ip_address = item[0]
+            logger.info(u"PlexPy DataFactory :: Updating metadata in the database for rating key: %s." % new_rating_key)
+            monitor_db = database.MonitorDatabase()
 
-        return ip_address
+            # Update the session_history_metadata table
+            query = 'UPDATE session_history_metadata SET rating_key = ?, parent_rating_key = ?, ' \
+                    'grandparent_rating_key = ?, title = ?, parent_title = ?, grandparent_title = ?, full_title = ?, ' \
+                    'media_index = ?, parent_media_index = ?, library_id = ?, thumb = ?, parent_thumb = ?, ' \
+                    'grandparent_thumb = ?, art = ?, media_type = ?, year = ?, originally_available_at = ?, ' \
+                    'added_at = ?, updated_at = ?, last_viewed_at = ?, content_rating = ?, summary = ?, ' \
+                    'tagline = ?, rating = ?, duration = ?, guid = ?, directors = ?, writers = ?, actors = ?, ' \
+                    'genres = ?, studio = ? ' \
+                    'WHERE rating_key = ?'
+
+            args = [metadata['rating_key'], metadata['parent_rating_key'], metadata['grandparent_rating_key'],
+                    metadata['title'], metadata['parent_title'], metadata['grandparent_title'], full_title,
+                    metadata['media_index'], metadata['parent_media_index'], metadata['library_id'], metadata['thumb'],
+                    metadata['parent_thumb'], metadata['grandparent_thumb'], metadata['art'], metadata['media_type'],
+                    metadata['year'], metadata['originally_available_at'], metadata['added_at'], metadata['updated_at'],
+                    metadata['last_viewed_at'], metadata['content_rating'], metadata['summary'], metadata['tagline'], 
+                    metadata['rating'], metadata['duration'], metadata['guid'], directors, writers, actors, genres,
+                    metadata['studio'],
+                    old_rating_key]
+
+            monitor_db.action(query=query, args=args)
 
     def update_library_ids(self):
         from plexpy import pmsconnect
@@ -1083,3 +1090,19 @@ class DataFactory(object):
                     monitor_db.upsert('library_sections', key_dict=section_keys, value_dict=section_values)
 
         return True
+
+    def get_session_ip(self, session_key=''):
+        monitor_db = database.MonitorDatabase()
+
+        if session_key:
+            query = 'SELECT ip_address FROM sessions WHERE session_key = %d' % int(session_key)
+            result = monitor_db.select(query)
+        else:
+            return None
+
+        ip_address = 'N/A'
+
+        for item in result:
+            ip_address = item[0]
+
+        return ip_address

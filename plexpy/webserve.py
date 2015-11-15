@@ -1,7 +1,4 @@
-﻿#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-# This file is part of PlexPy.
+﻿# This file is part of PlexPy.
 #
 #  PlexPy is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -792,13 +789,14 @@ class WebInterface(object):
             return None
 
     @cherrypy.expose
-    def info(self, library_id=None, item_id=None, source=None, query=None, **kwargs):
+    def info(self, library_id=None, item_id=None, source=None, **kwargs):
         # Make sure our library sections are up to date.
         data_factory = datafactory.DataFactory()
         data_factory.update_library_sections()
+        # temporary until I find a beter place to put this
+        data_factory.update_library_ids()
 
         metadata = None
-        query_string = query
 
         config = {
             "pms_identifier": plexpy.CONFIG.PMS_IDENTIFIER,
@@ -818,17 +816,48 @@ class WebInterface(object):
             result = pms_connect.get_metadata_details(rating_key=item_id)
             if result:
                 metadata = result['metadata']
-            else:
-                data_factory = datafactory.DataFactory()
-                query = data_factory.get_search_query(rating_key=item_id)
-                if query_string:
-                    query['query_string'] = query_string
 
         if metadata:
-            return serve_template(templatename="info.html", data=metadata, title="Info", config=config)
+            return serve_template(templatename="info.html", data=metadata, source=source, title="Info", config=config)
         else:
             logger.warn('Unable to retrieve data.')
-            return serve_template(templatename="info.html", data=None, query=query, title="Info")
+            raise cherrypy.HTTPRedirect("/update_metadata?rating_key=" + item_id)
+
+    @cherrypy.expose
+    def update_metadata(self, rating_key=None, query=None, **kwargs):
+
+        query_string = query
+
+        data_factory = datafactory.DataFactory()
+        query = data_factory.get_search_query(rating_key=rating_key)
+        if query_string:
+            query['query_string'] = query_string
+
+        if query:
+            return serve_template(templatename="update_metadata.html", query=query, title="Info")
+        else:
+            logger.warn('Unable to retrieve data.')
+            return serve_template(templatename="update_metadata.html", query=query, title="Info")
+
+    @cherrypy.expose
+    def update_metadata_details(self, old_rating_key, new_rating_key, media_type, **kwargs):
+        data_factory = datafactory.DataFactory()
+        pms_connect = pmsconnect.PmsConnect()
+
+        if new_rating_key:
+            old_key_list = data_factory.get_rating_keys_list(rating_key=old_rating_key, media_type=media_type)
+            new_key_list = pms_connect.get_rating_keys_list(rating_key=new_rating_key, media_type=media_type)
+
+            result = data_factory.update_metadata(old_key_list=old_key_list,
+                                                  new_key_list=new_key_list,
+                                                  media_type=media_type)
+        
+        if result:
+            cherrypy.response.headers['Content-type'] = 'application/json'
+            return json.dumps({'message': result})
+        else:
+            cherrypy.response.headers['Content-type'] = 'application/json'
+            return json.dumps({'message': 'no data received'})
 
     @cherrypy.expose
     def get_user_recently_watched(self, user=None, user_id=None, limit='10', **kwargs):
@@ -1458,26 +1487,6 @@ class WebInterface(object):
 
         data_factory = datafactory.DataFactory()
         result = data_factory.get_rating_keys_list(rating_key=rating_key, media_type=media_type)
-
-        if result:
-            cherrypy.response.headers['Content-type'] = 'application/json'
-            return json.dumps(result)
-        else:
-            logger.warn('Unable to retrieve data.')
-
-    @cherrypy.expose
-    def get_map_rating_keys(self, old_rating_key, new_rating_key, media_type, **kwargs):
-
-        data_factory = datafactory.DataFactory()
-        pms_connect = pmsconnect.PmsConnect()
-
-        if new_rating_key:
-            old_key_list = data_factory.get_rating_keys_list(rating_key=old_rating_key, media_type=media_type)
-            new_key_list = pms_connect.get_rating_keys_list(rating_key=new_rating_key, media_type=media_type)
-
-            result = data_factory.update_rating_key(old_key_list=old_key_list,
-                                                    new_key_list=new_key_list,
-                                                    media_type=media_type)
 
         if result:
             cherrypy.response.headers['Content-type'] = 'application/json'
