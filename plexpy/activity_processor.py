@@ -252,7 +252,7 @@ class ActivityProcessor(object):
 
                 args = [session['rating_key'], session['parent_rating_key'], session['grandparent_rating_key'],
                         session['title'], session['parent_title'], session['grandparent_title'], full_title,
-                        metadata['index'], metadata['parent_index'], metadata['library_id'], metadata['thumb'],
+                        metadata['media_index'], metadata['parent_media_index'], metadata['library_id'], metadata['thumb'],
                         metadata['parent_thumb'], metadata['grandparent_thumb'], metadata['art'], session['media_type'],
                         metadata['year'], metadata['originally_available_at'], metadata['added_at'], metadata['updated_at'],
                         metadata['last_viewed_at'], metadata['content_rating'], metadata['summary'], metadata['tagline'], 

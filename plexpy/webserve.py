@@ -1411,7 +1411,7 @@ class WebInterface(object):
             result['results_list'] = {media_type: result['results_list'][media_type]}
         if media_type == 'season' and season_index:
             for season in result['results_list']['season']:
-                if season['index'] == season_index:
+                if season['media_index'] == season_index:
                     result['results_list']['season'] = [season]
                     break
 
