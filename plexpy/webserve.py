@@ -789,12 +789,12 @@ class WebInterface(object):
             return None
 
     @cherrypy.expose
-    def info(self, library_id=None, item_id=None, source=None, **kwargs):
+    def info(self, library_id=None, rating_key=None, source=None, **kwargs):
         # Make sure our library sections are up to date.
         data_factory = datafactory.DataFactory()
         data_factory.update_library_sections()
         # temporary until I find a beter place to put this
-        data_factory.update_library_ids()
+        #data_factory.update_library_ids()
 
         metadata = None
 
@@ -805,7 +805,7 @@ class WebInterface(object):
 
         if source == 'history':
             data_factory = datafactory.DataFactory()
-            metadata = data_factory.get_metadata_details(row_id=item_id)
+            metadata = data_factory.get_metadata_details(rating_key=rating_key)
         elif library_id:
             pms_connect = pmsconnect.PmsConnect()
             result = pms_connect.get_library_metadata_details(library_id=library_id)
@@ -813,15 +813,15 @@ class WebInterface(object):
                 metadata = result['metadata']
         else:
             pms_connect = pmsconnect.PmsConnect()
-            result = pms_connect.get_metadata_details(rating_key=item_id)
+            result = pms_connect.get_metadata_details(rating_key=rating_key)
             if result:
                 metadata = result['metadata']
 
         if metadata:
             return serve_template(templatename="info.html", data=metadata, source=source, title="Info", config=config)
         else:
-            logger.warn('Unable to retrieve data.')
-            raise cherrypy.HTTPRedirect("/update_metadata?rating_key=" + item_id)
+            return self.update_metadata(rating_key)
+            #raise cherrypy.InternalRedirect("/update_metadata?rating_key=" + rating_key)
 
     @cherrypy.expose
     def update_metadata(self, rating_key=None, query=None, **kwargs):
@@ -851,7 +851,7 @@ class WebInterface(object):
             result = data_factory.update_metadata(old_key_list=old_key_list,
                                                   new_key_list=new_key_list,
                                                   media_type=media_type)
-        
+
         if result:
             cherrypy.response.headers['Content-type'] = 'application/json'
             return json.dumps({'message': result})

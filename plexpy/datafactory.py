@@ -702,10 +702,10 @@ class DataFactory(object):
 
         return recently_watched
 
-    def get_metadata_details(self, row_id):
+    def get_metadata_details(self, rating_key):
         monitor_db = database.MonitorDatabase()
 
-        if row_id:
+        if rating_key:
             query = 'SELECT session_history_metadata.rating_key, session_history_metadata.parent_rating_key, ' \
                     'session_history_metadata.grandparent_rating_key, session_history_metadata.title, ' \
                     'session_history_metadata.parent_title, session_history_metadata.grandparent_title, ' \
@@ -722,8 +722,8 @@ class DataFactory(object):
                     'session_history_metadata.actors, session_history_metadata.genres, session_history_metadata.studio ' \
                     'FROM session_history_metadata ' \
                     'JOIN library_sections ON session_history_metadata.library_id = library_sections.section_id ' \
-                    'WHERE session_history_metadata.id = ?'
-            result = monitor_db.select(query=query, args=[row_id])
+                    'WHERE session_history_metadata.rating_key = ?'
+            result = monitor_db.select(query=query, args=[rating_key])
         else:
             result = []
 

@@ -38,29 +38,29 @@ DOCUMENTATION :: END
                     <div class="summary-navbar-list">
                         <ul class="list-unstyled breadcrumb">
                             % if query['media_type'] == 'movie':
-                            <li><a href="info?item_id=movie">Movies</a></li>
+                            <li>Movies</li>
                             <li class="active">${query['title']}</li>
                             % elif query['media_type'] == 'show':
-                            <li><a href="info?item_id=show">TV Shows</a></li>
+                            <li>TV Shows</li>
                             <li class="active">${query['grandparent_title']}</li>
                             % elif query['media_type'] == 'season':
-                            <li class="hidden-xs hidden-sm"><a href="info?item_id=show">TV Shows</a></li>
+                            <li class="hidden-xs hidden-sm">TV Shows</li>
                             <li class="hidden-xs hidden-sm">${query['grandparent_title']}</li>
                             <li class="active">Season ${query['parent_media_index']}</li>
                             % elif query['media_type'] == 'episode':
-                            <li class="hidden-xs hidden-sm"><a href="info?item_id=show">TV Shows</a></li>
+                            <li class="hidden-xs hidden-sm">TV Shows</li>
                             <li class="hidden-xs hidden-sm">${query['grandparent_title']}</li>
                             <li>Season ${query['parent_media_index']}</li>
                             <li class="active">Episode ${query['media_index']} - ${query['title']}</li>
                             % elif query['media_type'] == 'artist':
-                            <li><a href="info?item_id=artist">Music</a></li>
+                            <li><Music</li>
                             <li class="active">${query['grandparent_title']}</li>
                             % elif query['media_type'] == 'album':
-                            <li class="hidden-xs hidden-sm"><a href="info?item_id=artist">Music</a></li>
+                            <li class="hidden-xs hidden-sm">Music</li>
                             <li>${query['grandparent_title']}</li>
                             <li class="active">${query['parent_title']}</li>
                             % elif query['media_type'] == 'track':
-                            <li class="hidden-xs hidden-sm"><a href="info?item_id=artist">Music</a></li>
+                            <li class="hidden-xs hidden-sm">Music</li>
                             <li class="hidden-xs hidden-sm">${query['grandparent_title']}</li>
                             <li>${query['parent_title']}</li>
                             <li class="active">Track ${query['media_index']} - ${query['title']}</li>
