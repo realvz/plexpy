@@ -954,8 +954,7 @@ class DataFactory(object):
             pairs = {}
             for k, v in old.iteritems():
                 if k in new:
-                    if v['rating_key'] != new[k]['rating_key']:
-                        pairs.update({v['rating_key']: new[k]['rating_key']})
+                    pairs.update({v['rating_key']: new[k]['rating_key']})
                     if 'children' in old[k]:
                         pairs.update(get_pairs(old[k]['children'], new[k]['children']))
 
@@ -969,10 +968,10 @@ class DataFactory(object):
         if mapping:
             logger.info(u"PlexPy DataFactory :: Updating metadata in the database.")
             for old_key, new_key in mapping.iteritems():
-                metadata = pms_connect.get_metadata_details(new_key)
+                result = pms_connect.get_metadata_details(new_key)
 
-                if metadata:
-                    metadata = metadata['metadata']
+                if result:
+                    metadata = result['metadata']
                     if metadata['media_type'] == 'show' or metadata['media_type'] == 'artist':
                         # check grandparent_rating_key (2 tables)
                         monitor_db.action('UPDATE session_history SET grandparent_rating_key = ? WHERE grandparent_rating_key = ?', 
@@ -1015,7 +1014,7 @@ class DataFactory(object):
             actors = ";".join(metadata['actors'])
             genres = ";".join(metadata['genres'])
 
-            logger.info(u"PlexPy DataFactory :: Updating metadata in the database for rating key: %s." % new_rating_key)
+            #logger.info(u"PlexPy DataFactory :: Updating metadata in the database for rating key: %s." % new_rating_key)
             monitor_db = database.MonitorDatabase()
 
             # Update the session_history_metadata table

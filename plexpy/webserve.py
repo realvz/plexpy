@@ -816,9 +816,9 @@ class WebInterface(object):
             result = pms_connect.get_metadata_details(rating_key=rating_key)
             if result:
                 metadata = result['metadata']
-
+        
         if metadata:
-            return serve_template(templatename="info.html", data=metadata, source=source, title="Info", config=config)
+            return serve_template(templatename="info.html", data=metadata, title="Info", config=config)
         else:
             return self.update_metadata(rating_key)
             #raise cherrypy.InternalRedirect("/update_metadata?rating_key=" + rating_key)

@@ -499,7 +499,7 @@ DOCUMENTATION :: END
     });
 </script>
 % endif
-% if data['media_type'] != 'library' and source == 'history':
+% if data['media_type'] != 'library':
 <script>
     $('#row-edit-mode').after('<a href="update_metadata?rating_key=${data['rating_key']}" class="btn btn-danger btn-edit" id="fix-metadata"> \
         <i class="fa fa-wrench"></i> Fix Metadata</a>');
